@@ -1,1 +1,34 @@
 /* You can add global styles to this file, and also import other style files */
+
+html,
+body {
+  height: 100%;
+  padding: 10px;
+}
+body {
+  margin: 0;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+}
+* {
+  box-sizing: border-box;
+}
+
+.w-160 {
+  width: 160px;
+}
+
+.fx-flex {
+  display: flex;
+}
+
+.fx-align-items-center {
+  align-items: baseline;
+}
+
+.fx-gap-10 {
+  gap: 10px;
+}
+
+.mt-8 {
+  margin-top: 8px;
+}
