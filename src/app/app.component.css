@@ -1,0 +1,29 @@
+.table-row {
+}
+
+.table-data {
+  padding: 0 5px;
+  margin: 5px 0;
+  border-bottom: 2px solid darkgray;
+  vertical-align: middle;
+  max-width: 115px;
+  text-overflow: ellipsis;
+}
+
+.comparison-matrix {
+  border: 2px solid darkgray;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  display: inline-block;
+  padding: 10px;
+}
+
+.criterion-name {
+  display: inline-block;
+  font-weight: 500;
+  font-size: 1.3rem;
+  /* margin: 10px 0; */
+  padding: 5px 10px;
+  text-transform: uppercase;
+  line-height: 100%;
+}

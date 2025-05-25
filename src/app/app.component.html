@@ -1,39 +1,110 @@
 <h1>AHP Calculator</h1>
 <div class="wrapper">
-    <!-- <div class="fx-flex fx-align-items-center fx-gap-10">
-        <mat-form-field class="w-160" appearance="outline">
-            <mat-label>Alternatives Amount</mat-label>
-            <input type="number" [formControl]="altAmountControl" matInput />
-        </mat-form-field>
-        <button class="pt1" mat-button (click)="altAmountClicked()">test</button>
-    </div> -->
     <mat-stepper orientation="vertical" linear="true" #stepper>
         <mat-step [completed]="alternatives.length >= 2">
             <ng-template matStepLabel>Fill out alternatives</ng-template>
-            <mat-form-field appearance="outline" class="mt-8">
-                <mat-label>Alternatives</mat-label>
-
-                <input
-                    matInput
-                    [formControl]="altControl"
-                    placeholder="New alternative..."
-                    [matChipInputFor]="altChipGrid"
-                    (matChipInputTokenEnd)="onAddAlt($event)" />
-            </mat-form-field>
-            <mat-chip-grid #altChipGrid>
-                @for (alt of alternatives; track alt) {
-                <mat-chip-row (removed)="onRemoveAlt(alt)">
-                    {{ alt }}
-                    <button matChipRemove>
-                        <mat-icon>cancel</mat-icon>
-                    </button>
-                </mat-chip-row>
-                }
-            </mat-chip-grid>
-            <button [disabled]="alternatives.length < 2" mat-button matStepperNext>Next</button>
+            <div class="fx-flex fx-align-items-start fx-gap-10 mt-8">
+                <mat-form-field appearance="outline" class="w-180">
+                    <mat-label>Alternative</mat-label>
+                    <input matInput [formControl]="altControl" [matChipInputFor]="altChipGrid"
+                        (matChipInputTokenEnd)="onAddAlt($event)" />
+                    <mat-hint>At least 2 alternatives</mat-hint>
+                </mat-form-field>
+                <mat-chip-grid #altChipGrid class="fx-wrap w-380">
+                    @for (alt of alternatives; track alt) {
+                    <mat-chip-row (removed)="onRemoveAlt(alt)">
+                        {{ alt }} <button matChipRemove> <mat-icon>cancel</mat-icon> </button>
+                    </mat-chip-row>
+                    }
+                </mat-chip-grid>
+            </div>
+            <button [disabled]="alternatives.length < 2" mat-button matStepperNext class="mt-8">Next</button>
         </mat-step>
-        <mat-step>
-            <ng-template matStepLabel>Fill out 2nd step</ng-template>
+
+        <mat-step [completed]="criterias.length >= 2">
+            <ng-template matStepLabel>Fill out criterias</ng-template>
+            <div class="fx-flex fx-align-items-start fx-gap-10 mt-8">
+                <mat-form-field appearance="outline" class="w-180">
+                    <mat-label>Criteria</mat-label>
+                    <input matInput [formControl]="criteriaControl" [matChipInputFor]="criteriaChipGrid"
+                        (matChipInputTokenEnd)="onAddCriteria($event)" />
+                    <mat-hint>At least 2 criterias</mat-hint>
+                </mat-form-field>
+                <mat-chip-grid #criteriaChipGrid class="fx-wrap w-380">
+                    @for (criteria of criterias; track criteria) {
+                    <mat-chip-row (removed)="onRemoveCriteria(criteria)">
+                        {{ criteria }} <button matChipRemove> <mat-icon>cancel</mat-icon> </button>
+                    </mat-chip-row>
+                    }
+                </mat-chip-grid>
+            </div>
+            <button [disabled]="criterias.length < 2" mat-button matStepperNext class="mt-8" (click)="onStep2Finish()">Next</button>
+        </mat-step>
+        <!-- step 3 -->
+        <mat-step [completed]="criteriaComparisonDone">
+            <ng-template matStepLabel>Compare criteria importance</ng-template>
+            <div class="mt-15">
+                <table>
+                    <tr class="table-row">
+                        <th class="table-data">Criteion</th>
+                        <th class="table-data" *ngFor="let criterion of criterias">{{criterion}}</th>
+                    </tr>
+                    <tr class="table-row" *ngFor="let criterionRow of criteriaComparisonMatrix; let rowIndex = index">
+                        <td class="table-data">{{criterionRow.entity}}</td>
+                        <td class="table-data" *ngFor="let importance of criterionRow.importances let colIndex = index">
+                            <mat-form-field class="w-90 mt-15" appearance="outline">
+                                <mat-select [(ngModel)]="importance.valueLabel" [disabled]="importance.disabled"
+                                (selectionChange)="onImportanceSelect(rowIndex, colIndex, $event.value)">
+                                    <mat-option *ngFor="let mark of markLabels" [value]="mark">{{mark}}</mat-option>
+                                </mat-select>
+                                <mat-hint>{{importance.value.toFixed(2)}}</mat-hint>
+                            </mat-form-field>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <button mat-button (click)="onCheckCriteriaComparison()" class="mt-8">Check CR</button>
+            <button mat-button (click)="onCompareAlts()" matStepperNext class="mt-8" [disabled]="!criteriaComparisonDone">Next</button>
+        </mat-step>
+        <!-- step 4 -->
+        <mat-step [completed]="altComparisonDone">
+            <ng-template matStepLabel>Compare alternatives</ng-template>
+            <div class="fx-flex-column mt-8">
+                <div class="comparison-matrix"
+                    *ngFor="let m of altComparisonMatrixes; let mIndex = index">
+                    <div class="fx-flex fx-align-items-center fx-gap-10">
+                        <button mat-button (click)="onAltCRcheck(mIndex)">Check CR</button>
+                        <div class="criterion-name">{{m.criterion}}</div>
+                    </div>
+                    <table class="mt-15">
+                        <tr class="table-row">
+                            <th class="table-data">Alternative</th>
+                            <th class="table-data" *ngFor="let alt of alternatives">{{alt}}</th>
+                        </tr>
+                        <tr class="table-row" *ngFor="let row of m.comparisons; let rowIndex = index">
+                            <td class="table-data">{{row.entity}}</td>
+                            <td class="table-data" *ngFor="let importance of row.importances let colIndex = index">
+                                <mat-form-field class="w-90 mt-15" appearance="outline">
+                                    <mat-select [(ngModel)]="importance.valueLabel" [disabled]="importance.disabled"
+                                    (selectionChange)="onAltImportanceSelect(mIndex, rowIndex, colIndex, $event.value)">
+                                        <mat-option *ngFor="let mark of markLabels" [value]="mark">{{mark}}</mat-option>
+                                    </mat-select>
+                                    <mat-hint>{{importance.value.toFixed(2)}}</mat-hint>
+                                </mat-form-field>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <button mat-button (click)="onCheckAltsComparisons()" class="mt-8">Check CR</button>
+                <button mat-button (click)="onResultsStep()" matStepperNext class="mt-8" [disabled]="!altComparisonDone">Next</button>
+            </div>
+        </mat-step>
+        <!-- step 4 -->
+        <mat-step [completed]="altComparisonDone">
+            <ng-template matStepLabel>Results</ng-template>
+            <div class="mt-8">
+                RESULTS
+            </div>
         </mat-step>
     </mat-stepper>
 </div>
