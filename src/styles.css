@@ -3,7 +3,7 @@
 html,
 body {
   height: 100%;
-  padding: 10px;
+  padding: 5px;
 }
 body {
   margin: 0;
@@ -23,22 +23,13 @@ p {
   padding: 0;
 }
 
-/* table,
-caption,
-tbody,
-tfoot,
-thead,
-tr,
-th,
-td {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  outline: 0;
-  font-size: 100%;
-  vertical-align: baseline;
-  background: transparent;
-} */
+.w-110 {
+  width: 120px;
+}
+
+.w-70 {
+  width: 70px;
+}
 
 .w-90 {
   width: 90px;
@@ -93,16 +84,19 @@ td {
   margin-top: 15px;
 }
 
+.mb-5 {
+  margin-bottom: 5px;
+}
+
+.ml-15 {
+  margin-left: 15px;
+}
+
 .pt-15 {
   padding-top: 15px;
 }
 
-.snackbar-success {
-  background-color: #4caf50;
-  color: white;
-}
-
-.snackbar-error {
-  background-color: #f44336;
-  color: white;
+.bb {
+  border: 1px solid dimgray;
+  padding: 5px;
 }

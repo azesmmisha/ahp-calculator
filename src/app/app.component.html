@@ -1,109 +1,197 @@
-<h1>AHP Calculator</h1>
+<h1 style="font-size: 22px" class="ml-15 mb-5">AHP Calculator</h1>
 <div class="wrapper">
-    <mat-stepper orientation="vertical" linear="true" #stepper>
-        <mat-step [completed]="alternatives.length >= 2">
-            <ng-template matStepLabel>Fill out alternatives</ng-template>
+    <mat-stepper (selectionChange)="onStepChange($event)" orientation="vertical" linear="true" #stepper>
+        <!-- step 1 -->
+        <mat-step [completed]="criterias.length >= 2 && alternatives.length >= 2">
+            <ng-template matStepLabel>Заповнення альтернатив та критеріїв</ng-template>
             <div class="fx-flex fx-align-items-start fx-gap-10 mt-8">
                 <mat-form-field appearance="outline" class="w-180">
-                    <mat-label>Alternative</mat-label>
-                    <input matInput [formControl]="altControl" [matChipInputFor]="altChipGrid"
-                        (matChipInputTokenEnd)="onAddAlt($event)" />
-                    <mat-hint>At least 2 alternatives</mat-hint>
+                    <mat-label>Альтернатива</mat-label>
+                    <input matInput [formControl]="altControl" [matChipInputFor]="altChipGrid" (matChipInputTokenEnd)="onAddAlt($event)" />
+                    <mat-hint>Мін. 2 альтернативи</mat-hint>
                 </mat-form-field>
                 <mat-chip-grid #altChipGrid class="fx-wrap w-380">
                     @for (alt of alternatives; track alt) {
                     <mat-chip-row (removed)="onRemoveAlt(alt)">
-                        {{ alt }} <button matChipRemove> <mat-icon>cancel</mat-icon> </button>
+                        {{ alt }} <button matChipRemove><mat-icon>cancel</mat-icon></button>
                     </mat-chip-row>
                     }
                 </mat-chip-grid>
             </div>
-            <button [disabled]="alternatives.length < 2" mat-button matStepperNext class="mt-8">Next</button>
-        </mat-step>
-
-        <mat-step [completed]="criterias.length >= 2">
-            <ng-template matStepLabel>Fill out criterias</ng-template>
             <div class="fx-flex fx-align-items-start fx-gap-10 mt-8">
                 <mat-form-field appearance="outline" class="w-180">
-                    <mat-label>Criteria</mat-label>
-                    <input matInput [formControl]="criteriaControl" [matChipInputFor]="criteriaChipGrid"
+                    <mat-label>Критерій</mat-label>
+                    <input
+                        matInput
+                        [formControl]="criteriaControl"
+                        [matChipInputFor]="criteriaChipGrid"
                         (matChipInputTokenEnd)="onAddCriteria($event)" />
-                    <mat-hint>At least 2 criterias</mat-hint>
+                    <mat-hint>Мін. 2 критерії</mat-hint>
                 </mat-form-field>
                 <mat-chip-grid #criteriaChipGrid class="fx-wrap w-380">
                     @for (criteria of criterias; track criteria) {
                     <mat-chip-row (removed)="onRemoveCriteria(criteria)">
-                        {{ criteria }} <button matChipRemove> <mat-icon>cancel</mat-icon> </button>
+                        {{ criteria }} <button matChipRemove><mat-icon>cancel</mat-icon></button>
                     </mat-chip-row>
                     }
                 </mat-chip-grid>
             </div>
-            <button [disabled]="criterias.length < 2" mat-button matStepperNext class="mt-8" (click)="onStep2Finish()">Next</button>
+            <button [disabled]="criterias.length < 2 || alternatives.length < 2" mat-button matStepperNext class="mt-8">
+                Наступний Крок
+            </button>
         </mat-step>
-        <!-- step 3 -->
-        <mat-step [completed]="criteriaComparisonDone">
-            <ng-template matStepLabel>Compare criteria importance</ng-template>
+        <!-- step 2 -->
+        <mat-step [completed]="criteriaComparisonMatrix?.consistent">
+            <ng-template matStepLabel>Порівняння критеріїв</ng-template>
             <div class="mt-15">
-                <table>
+                <table style="border-collapse: collapse" *ngIf="criteriaComparisonMatrix">
                     <tr class="table-row">
-                        <th class="table-data">Criteion</th>
-                        <th class="table-data" *ngFor="let criterion of criterias">{{criterion}}</th>
+                        <th class="td">Критерій</th>
+                        <th class="td" *ngFor="let criterion of criterias">{{ criterion }}</th>
+                        <ng-container *ngIf="criteriaComparisonMatrix?.processed">
+                            <th class="td max-w-110">Оцінки компонентів власного вектора</th>
+                            <th class="td max-w-110">Нормалізовані оцінки вектора пріоритетів</th>
+                            <th class="td max-w-110">𝐴𝑤</th>
+                            <th class="td max-w-110">𝑣</th>
+                        </ng-container>
                     </tr>
-                    <tr class="table-row" *ngFor="let criterionRow of criteriaComparisonMatrix; let rowIndex = index">
-                        <td class="table-data">{{criterionRow.entity}}</td>
-                        <td class="table-data" *ngFor="let importance of criterionRow.importances let colIndex = index">
-                            <mat-form-field class="w-90 mt-15" appearance="outline">
-                                <mat-select [(ngModel)]="importance.valueLabel" [disabled]="importance.disabled"
-                                (selectionChange)="onImportanceSelect(rowIndex, colIndex, $event.value)">
-                                    <mat-option *ngFor="let mark of markLabels" [value]="mark">{{mark}}</mat-option>
+                    <tr class="table-row" *ngFor="let criterionRow of criteriaComparisonMatrix.compValues; let rowIndex = index">
+                        <td class="td first-column">{{ criterionRow.entity }}</td>
+                        <td class="td" *ngFor="let importance of criterionRow.importances; let colIndex = index">
+                            <mat-form-field class="w-70 mt-8" appearance="outline">
+                                <mat-select
+                                    [(ngModel)]="importance.valueLabel"
+                                    [disabled]="importance.disabled"
+                                    (selectionChange)="onImportanceSelect(rowIndex, colIndex, $event.value)">
+                                    <mat-option *ngFor="let mark of markLabels" [value]="mark">{{ mark }}</mat-option>
                                 </mat-select>
-                                <mat-hint>{{importance.value.toFixed(2)}}</mat-hint>
+                                <mat-hint>{{ importance.value.toFixed(4) }}</mat-hint>
                             </mat-form-field>
                         </td>
+                        <ng-container *ngIf="criteriaComparisonMatrix?.processed">
+                            <td class="td max-w-110">
+                                {{ criteriaComparisonMatrix.result[rowIndex].geomMean.toFixed(8) }}
+                            </td>
+                            <td class="td max-w-110">
+                                {{ criteriaComparisonMatrix.result[rowIndex].geomMeanNormalized.toFixed(8) }}
+                            </td>
+                            <td class="td max-w-110">
+                                {{ criteriaComparisonMatrix.weightedSumVector[rowIndex].toFixed(8) }}
+                            </td>
+                            <td class="td max-w-110">
+                                {{ criteriaComparisonMatrix.consistencyVector[rowIndex].toFixed(8) }}
+                            </td>
+                        </ng-container>
                     </tr>
                 </table>
-            </div>
-            <button mat-button (click)="onCheckCriteriaComparison()" class="mt-8">Check CR</button>
-            <button mat-button (click)="onCompareAlts()" matStepperNext class="mt-8" [disabled]="!criteriaComparisonDone">Next</button>
-        </mat-step>
-        <!-- step 4 -->
-        <mat-step [completed]="altComparisonDone">
-            <ng-template matStepLabel>Compare alternatives</ng-template>
-            <div class="fx-flex-column mt-8">
-                <div class="comparison-matrix"
-                    *ngFor="let m of altComparisonMatrixes; let mIndex = index">
-                    <div class="fx-flex fx-align-items-center fx-gap-10">
-                        <button mat-button (click)="onAltCRcheck(mIndex)">Check CR</button>
-                        <div class="criterion-name">{{m.criterion}}</div>
-                    </div>
-                    <table class="mt-15">
-                        <tr class="table-row">
-                            <th class="table-data">Alternative</th>
-                            <th class="table-data" *ngFor="let alt of alternatives">{{alt}}</th>
-                        </tr>
-                        <tr class="table-row" *ngFor="let row of m.comparisons; let rowIndex = index">
-                            <td class="table-data">{{row.entity}}</td>
-                            <td class="table-data" *ngFor="let importance of row.importances let colIndex = index">
-                                <mat-form-field class="w-90 mt-15" appearance="outline">
-                                    <mat-select [(ngModel)]="importance.valueLabel" [disabled]="importance.disabled"
-                                    (selectionChange)="onAltImportanceSelect(mIndex, rowIndex, colIndex, $event.value)">
-                                        <mat-option *ngFor="let mark of markLabels" [value]="mark">{{mark}}</mat-option>
-                                    </mat-select>
-                                    <mat-hint>{{importance.value.toFixed(2)}}</mat-hint>
-                                </mat-form-field>
-                            </td>
-                        </tr>
-                    </table>
+                <div class="ml-15 mt-15" *ngIf="criteriaComparisonMatrix?.processed">
+                    <p>𝑤 = ({{ criteriaComparisonMatrix.priorityVector }})</p>
+                    <p>
+                        λ_max = {{ criteriaComparisonMatrix.lambdaMax }};&emsp;CI = (λ_max - n)/(n - 1) =
+                        {{ criteriaComparisonMatrix.ci }};&emsp;RI = {{ criteriaComparisonMatrix.ri }};&emsp;CR = CI/RI =
+                        {{ criteriaComparisonMatrix.cr }} ( {{ criteriaComparisonMatrix.consistent ? '<' : '≥' }}
+                        {{ criteriaComparisonMatrix.threshold }})
+                    </p>
                 </div>
-                <button mat-button (click)="onCheckAltsComparisons()" class="mt-8">Check CR</button>
-                <button mat-button (click)="onResultsStep()" matStepperNext class="mt-8" [disabled]="!altComparisonDone">Next</button>
+            </div>
+            <button mat-button (click)="onProcessCriteriaComparison()" class="mt-8">Обробка</button>
+            <button mat-button matStepperNext class="mt-8" [disabled]="!criteriaComparisonMatrix?.consistent">Наступний Крок</button>
+        </mat-step>
+        <!-- step 3 -->
+        <mat-step [completed]="altComparison?.consistent">
+            <ng-template matStepLabel>Порівняння альтернатив</ng-template>
+            <div *ngIf="altComparison" class="fx-flex-column mt-8">
+                <div class="comparison-matrix" *ngFor="let m of altComparison.matrixes; let mIndex = index">
+                    <div>
+                        <div class="fx-flex fx-align-items-center fx-gap-10">
+                            <button mat-button (click)="onProcessAltComparison(mIndex)">Обробка</button>
+                            <div class="criterion-name">{{ m.criterion }}</div>
+                        </div>
+                        <table style="border-collapse: collapse" class="mt-15">
+                            <tr class="table-row">
+                                <th class="td">Альтернатива</th>
+                                <th class="td" *ngFor="let alt of alternatives">{{ alt }}</th>
+                                <ng-container *ngIf="altComparison.matrixes[mIndex].processed">
+                                    <th class="td w-110">Оцінки компонентів власного вектора</th>
+                                    <th class="td w-110">Нормалізовані оцінки вектора пріоритетів</th>
+                                    <th class="td w-110">𝐴𝑤</th>
+                                    <th class="td w-110">𝑣</th>
+                                </ng-container>
+                            </tr>
+                            <tr class="table-row" *ngFor="let row of m.compValues; let rowIndex = index">
+                                <td class="td first-column">{{ row.entity }}</td>
+                                <td class="td" *ngFor="let importance of row.importances; let colIndex = index">
+                                    <mat-form-field class="w-70 mt-8" appearance="outline">
+                                        <mat-select
+                                            [(ngModel)]="importance.valueLabel"
+                                            [disabled]="importance.disabled"
+                                            (selectionChange)="onAltImportanceSelect(mIndex, rowIndex, colIndex, $event.value)">
+                                            <mat-option *ngFor="let mark of markLabels" [value]="mark">{{ mark }}</mat-option>
+                                        </mat-select>
+                                        <mat-hint>{{ importance.value.toFixed(2) }}</mat-hint>
+                                    </mat-form-field>
+                                </td>
+                                <ng-container *ngIf="altComparison.matrixes[mIndex].processed">
+                                    <td class="td w-110">
+                                        {{ altComparison.matrixes[mIndex].result[rowIndex].geomMean.toFixed(8) }}
+                                    </td>
+                                    <td class="td w-110">
+                                        {{ altComparison.matrixes[mIndex].result[rowIndex].geomMeanNormalized.toFixed(8) }}
+                                    </td>
+                                    <td class="td w-110">
+                                        {{ altComparison.matrixes[mIndex].weightedSumVector[rowIndex].toFixed(8) }}
+                                    </td>
+                                    <td class="td w-110">
+                                        {{ altComparison.matrixes[mIndex].consistencyVector[rowIndex].toFixed(8) }}
+                                    </td>
+                                </ng-container>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="mt-15" *ngIf="altComparison.matrixes[mIndex].processed">
+                        <p>𝑤 = ({{ altComparison.matrixes[mIndex].priorityVector }})</p>
+                        <p>λ_max = {{ altComparison.matrixes[mIndex].lambdaMax }}</p>
+                        <p>CI = (λ_max - n)/(n - 1) = {{ altComparison.matrixes[mIndex].ci }}</p>
+                        <p>RI = {{ altComparison.matrixes[mIndex].ri }}</p>
+                        <p>
+                            CR = CI/RI = {{ altComparison.matrixes[mIndex].cr }} ({{
+                                altComparison.matrixes[mIndex].consistent ? '<' : '≥'
+                            }}
+                            {{ altComparison.matrixes[mIndex].threshold }})
+                        </p>
+                    </div>
+                </div>
+                <button mat-button (click)="onProcessAltsComparisons()" class="mt-8">Обробка</button>
+                <button mat-button matStepperNext class="mt-8" [disabled]="!altComparison?.consistent">Наступний Крок</button>
             </div>
         </mat-step>
         <!-- step 4 -->
-        <mat-step [completed]="altComparisonDone">
-            <ng-template matStepLabel>Results</ng-template>
-            <div class="mt-8">
-                RESULTS
+        <mat-step [completed]="false">
+            <ng-template matStepLabel>Результат</ng-template>
+            <div *ngIf="results?.length" class="mt-8">
+                <table style="border-collapse: collapse">
+                    <tr>
+                        <th class="bb" rowspan="4">Альтернативи</th>
+                        <th class="bb" [colSpan]="criterias.length">Критерії</th>
+                        <th class="bb" rowspan="4">Глобальні пріоритети</th>
+                    </tr>
+                    <tr>
+                        <th class="bb" *ngFor="let cr of criterias">{{ cr }}</th>
+                    </tr>
+                    <tr>
+                        <td class="bb" style="text-align: center" [colSpan]="criterias.length">Числові значення вектора пріоритету</td>
+                    </tr>
+                    <tr>
+                        <td class="bb" *ngFor="let wi of criteriaComparisonMatrix.result">
+                            {{ wi.geomMeanNormalized | number : '1.8-8' }}
+                        </td>
+                    </tr>
+                    <tr *ngFor="let res of results">
+                        <td class="bb">{{ res.alternative }}</td>
+                        <td class="bb" *ngFor="let w of res.priorityVector">{{ w | number : '1.8-8' }}</td>
+                        <td class="bb">{{ res.result | number : '1.8-8' }}</td>
+                    </tr>
+                </table>
             </div>
         </mat-step>
     </mat-stepper>

@@ -1,20 +1,39 @@
 .table-row {
 }
 
+.first-column {
+  font-weight: bold;
+}
+
 .table-data {
   padding: 0 5px;
   margin: 5px 0;
   border-bottom: 2px solid darkgray;
   vertical-align: middle;
-  max-width: 115px;
+  max-width: 96px;
   text-overflow: ellipsis;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.td {
+  width: 100px;
+  padding: 0 5px;
+  vertical-align: middle;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid dimgray;
 }
 
 .comparison-matrix {
   border: 2px solid darkgray;
   border-radius: 5px;
   margin-bottom: 10px;
-  display: inline-block;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   padding: 10px;
 }
 
